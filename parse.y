@@ -52,7 +52,7 @@ term	   : number 			{$$ = $1;}
 int main(void){
 
         /* Initialize Table & define # of nuckets and scopes*/
-	scope = 1;
+	scope = 0;
 	buckets = 100;
 
 	stack  = (struct hash *)calloc(buckets, sizeof(struct hash));
