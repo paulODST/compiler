@@ -1,52 +1,26 @@
 %{
-#include <stdio.h>
-#include "hash2.h"
-#include<stdlib.h>
-#include<string.h>
-
+#include "y.tab.h"
 %}
 
 
 %%
- scope = 0;
- buckets = 100;
- stack = (struct hash *)calloc(buckets, sizeof(struct hash));        
 
 
-[0123456789]+           printf("NUMBER");
+[0-9]+          	{yylval.num = atoi(yytext); return number;}
 
-begin {		
-		printf("START");
-		Enter_new_scope();
-}
+begin    		{return start;}
 
-end {
-		printf("END");
-		Leave_current_scope();
-		display(); //just to show the SymbolTable	
-}
+end 			{return end;}
 
+output			{return print;}
 
-output		        printf("PRINT");
+[a-zA-Z][a-zA-Z0-9]* 	{yylval.id = strdup(yytext); return ID;}	 
 
-[a-zA-Z][a-zA-Z0-9]* {
-		printf("ID");
-		Insert(yytext, "int");	
-}	 
+[-+=*;(/)]		{return yytext[0];}
 
-['*']['*']			printf("EXP");
+[ \t\n]			; //do nothing 
 
-\+			printf("ADD");
-\- 			printf("SUB");
-\* 			printf("MUL");
-\/ 			printf("DIV");
-\= 			printf("EQ");
-
-
-\(			printf(" LP");
-\)			printf("RP ");
-
-\;			printf(" SCOL");
-
+. 			{ECHO; yyerror ("unexpected char");}
 
 %%
+int yywrap (void) {return 1;}
