@@ -1,0 +1,49 @@
+%{
+#include <iostream>
+#include <stdio.h>
+#include "Source/SymbolTable.h"
+#include "Source/Stack.h"
+#include <string.h>
+#include "Source/List.h"
+#include <stdlib.h>
+#include <regex.h>
+using namespace std;
+extern "C" int yylex();
+extern "C" int yyparse();
+void yyerror(const char*);
+void generate_copy(const char *, int);
+void generate_expression(const char *, char *);
+void generate_expression(const char *, int);
+char * generate_exponentiation(char *base, char *exponent);
+void generate_output(const char *);
+int checkIfVarIsRegister(char *);
+char *tempS;
+int generate_temp_expression(char *a, char *b, char *c);
+void printingThings();
+int searchRegisters(const char *);
+char tempR[100];
+char* tempEXP;
+int registerNumber = 0;
+%}
+
+%union
+{
+    int intstuff;
+    char *stringstuff;
+    List *symbolstuff;
+}
+
+%token <intstuff> INTLITERAL
+%token <symbolstuff> ID
+%token END
+%token BEG
+%token EXPONENT
+%token OUTPUT
+
+%type <stringstuff> expression
+%type <stringstuff> term
+%type <stringstuff> atom
+%type <stringstuff> factor
+%type <stringstuff> mul_op
+%type <stringstuff> add_op
+%type <stringstuff> statement /* statement_list */

@@ -1,0 +1,243 @@
+/*
+ * productions
+ */
+
+%start statement_list
+
+%%
+statement_list  :   statement_list statement
+                |   statement
+                ;
+
+statement   :   ID '=' expression ';'
+        {
+            generate_expression($1->current->key.c_str(), $3);
+        }
+        |   OUTPUT '(' ID ')' ';'
+        {
+            generate_output($3->current->key.c_str());
+        }
+        |   BEG ';'
+        {
+            printf("\n\n\n********STARTING ASSEMBLY OUTPUT********\n\n\n");
+        }
+        |   END ';'
+        {
+            printf("\n\n\n*********ENDING ASSEMBLY OUTPUT*********\n\n\n");
+        }
+    ;
+
+expression : expression add_op term 
+        {
+            if(tempEXP != "a"){
+                sprintf(tempEXP, "r%d", generate_temp_expression($1, $2, tempEXP));
+            }
+            else{
+                tempEXP = (char *)malloc(sizeof(char));
+                sprintf(tempEXP, "r%d", generate_temp_expression($1, $2, $3));
+            }
+        }
+        | term
+   ;
+
+term    :   term mul_op factor
+        {
+            if(tempEXP != NULL){
+                sprintf(tempEXP, "r%d", generate_temp_expression($1, $2, tempEXP));
+            }
+            else{
+                tempEXP = (char *)malloc(sizeof(char));
+                sprintf(tempEXP, "r%d", generate_temp_expression($1, $2, $3));
+            }
+        }
+        | factor
+    ;
+
+factor  :   factor EXPONENT atom
+        {
+            tempS = generate_exponentiation($1, $3);
+        }
+        | atom
+    ;
+
+atom    :   ID
+        {
+            $$ = strdup($1->current->key.c_str());
+        }
+        |   INTLITERAL
+        {
+            tempS = (char*)malloc(sizeof(char)*50);
+            sprintf(tempS,"%d",$1);
+            $$ = tempS;
+        }
+        |   '(' expression ')'
+    ;
+
+add_op  :   '+' {$$ = "+";}
+        |   '-' {$$ = "-";}
+        ;
+
+mul_op :   '*' {$$ = "*";}
+        |   '/' {$$ = "/";}
+        ;
+%%
+
+/* For basic assignment. 
+ * Should produce something like:
+ *      '%s = %d\n'
+ */
+int generate_temp_expression(char *a, char *b, char *c)
+{
+    if(searchRegisters(a) != -1){
+        sprintf(a, "r%d", searchRegisters(a));
+    }
+    if(searchRegisters(b) != -1){
+        sprintf(b, "r%d", searchRegisters(b));
+    }
+    if(searchRegisters(c) != -1){
+        sprintf(c, "r%d", searchRegisters(c));
+    }
+    printf("r%d = %s %s %s;\n", registerNumber, a, b, c);
+    registerNumber++;
+    return (registerNumber-1);
+}
+
+void generate_expression(const char *str, char *rhs)
+{
+    if(searchRegisters(rhs) != -1){
+        printf("r%d = r%d;\n", registerNumber, searchRegisters(rhs));
+        tempR[registerNumber] = (char)str[0];
+        registerNumber++;
+        //printingThings();
+        searchRegisters(str);
+    }
+    else{
+        printf("r%d = %s;\n", registerNumber, rhs);
+        tempR[registerNumber] = (char)str[0];
+        registerNumber++;
+        //printingThings();
+        searchRegisters(str);
+    }
+}
+
+char * generate_exponentiation(char *base, char *exponent)
+{
+    int temp1,temp2,temp3;//for remembering registers
+    char tempStr[50];
+    char returnReg[50];
+    strcpy(returnReg,"r");
+
+    //exponent register
+    if(checkIfVarIsRegister(exponent) == 0) {
+        printf("r%d = %s;\n", registerNumber, exponent);
+        temp1 = registerNumber;
+        registerNumber++;
+    } else {
+        printf("r%d = r%d;\n", registerNumber, ++registerNumber);
+        temp1 = registerNumber;
+        registerNumber++;
+    }
+
+    //base register
+    if(checkIfVarIsRegister(base) == 0) {
+        printf("r%d = %s;\n", registerNumber, base);
+        temp2 = registerNumber;
+        registerNumber++;
+    } else {
+        if(searchRegisters(base) != -1){
+            printf("r%d = r%d;\n", registerNumber, searchRegisters(base));
+            temp2 = registerNumber;
+            registerNumber++;
+        }
+        else{
+            printf("r%d = r%d;\n", registerNumber, registerNumber++);
+            temp2 = registerNumber;
+            registerNumber++;
+        }
+    }
+
+    //constant multiplier
+    printf("r%d = 1;\n", registerNumber);
+    temp3 = registerNumber;
+    registerNumber++;
+
+    printf("\nLOOP:\n");
+    printf("r%d = r%d * r%d;\n", temp3, temp2, temp3);
+    printf("r%d = r%d - 1;\n", temp1, temp1);
+    printf("if(r%d>0) goto LOOP;\n", temp1);
+
+    sprintf(tempStr,"%d",temp3);//convert from int to string
+
+    strncat(returnReg,tempStr,strlen(tempStr));
+
+    return returnReg;
+
+}
+
+void generate_output(const char *var)
+{
+    if(searchRegisters(var) != -1){
+        char temp[50] = "printf(\"%%s\",";
+        char *tempnum;
+        tempnum = (char*)malloc(sizeof(char));
+        sprintf(tempnum, "r%d", searchRegisters(var));
+        strcat(temp,tempnum);
+        strcat(temp,");");
+        printf(temp);
+        printf("\n");
+    }
+    else{
+        char temp[50] = "printf(\"%%s\",";
+        strcat(temp,var);
+        strcat(temp,");");
+        printf(temp);
+        printf("\n");
+    }
+}
+
+int checkIfVarIsRegister(char *s)
+{
+    regex_t regex;
+    int reti;
+
+    reti = regcomp(&regex, "^[0-9]+",REG_EXTENDED);
+    if (reti) {
+        fprintf(stderr, "Could not compile regex\n");
+        exit(1);
+    }
+    reti = regexec(&regex, s, 0, NULL, 0);
+    if(!reti) {
+        //printf("[Parser]:var is int\n");
+        return 0;
+    } else if(reti == REG_NOMATCH) {
+        //printf("[Parser]:var is register\n");
+        return 1;
+    }
+
+    regfree(&regex);
+}
+
+void printingThings(){
+    for(int i = 0; i<=registerNumber; i++){
+        printf("%c ", tempR[i]);
+    }
+}
+int searchRegisters(const char *target){
+    for(int x = 0; x<=registerNumber; x++){
+        char temp = tempR[x];
+        char temp2 = (char)target[0];
+        if(temp == temp2){
+            //printf("IT IS HERE: %c\n", (char)target[0]);
+            return x;
+        }
+        else{
+            //printf("ITS NOT FOUND YO\n");
+        }
+    }
+    return -1;
+}
+void yyerror(const char *s)
+{
+        fflush(stdout);
+        printf("Syntax Error: %s\n",s);
+}
