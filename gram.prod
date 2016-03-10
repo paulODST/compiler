@@ -164,7 +164,7 @@ char * generate_exponentiation(char *base, char *exponent)
     printf("\nLOOP:\n");
     printf("r%d = r%d * r%d;\n", temp3, temp2, temp3);
     printf("r%d = r%d - 1;\n", temp1, temp1);
-    printf("if(r%d>0) goto LOOP;\n", temp1);
+    printf("if(r%d>0) goto LOOP;\n\n", temp1);
 
     sprintf(tempStr,"%d",temp3);//convert from int to string
 
@@ -177,17 +177,17 @@ char * generate_exponentiation(char *base, char *exponent)
 void generate_output(const char *var)
 {
     if(searchRegisters(var) != -1){
-        char temp[50] = "printf(\"%%s\",";
+        char temp[50] = "print ";
         char *tempnum;
         tempnum = (char*)malloc(sizeof(char));
         sprintf(tempnum, "r%d", searchRegisters(var));
         strcat(temp,tempnum);
-        strcat(temp,");");
+        strcat(temp,";");
         printf(temp);
         printf("\n");
     }
     else{
-        char temp[50] = "printf(\"%%s\",";
+        char temp[50] = "print ";
         strcat(temp,var);
         strcat(temp,");");
         printf(temp);
