@@ -1,7 +1,6 @@
 compiler: gram.o lex.o
 		g++ -c -g lex.c gram.c
 		g++ -g gram.o lex.o Source/List.cpp Source/Record.cpp Source/Stack.cpp Source/SymbolTable.cpp Source/main.cpp -o compiler -lfl
-		./compiler < testFiles/test.E
 
 gram.o:	gram.c lex.o
 		g++ -c -g lex.c gram.c
@@ -21,3 +20,8 @@ lex.o:	gram.tok lex.c
 		
 clean:	
 		\rm *.o compiler gram.y gram.c lex.c gram.tab.h gram.output
+
+dirs = $(shell ls testFiles)
+
+testAll:
+		@$(foreach dir,$(dirs),./compiler < testFiles/$(dir);)
