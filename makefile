@@ -19,7 +19,7 @@ lex.o:	gram.tok lex.c
 		g++ -c lex.c
 		
 clean:	
-		\rm *.o compiler gram.y gram.c lex.c gram.tab.h gram.output
+		\rm *.o compiler gram.y gram.c lex.c gram.tab.h 
 
 dirs = $(shell ls testFiles)
 
