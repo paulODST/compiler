@@ -1,6 +1,7 @@
-/*
- * productions
- */
+//
+// production statements to create parsing
+//
+
 
 %start statement_list
 
